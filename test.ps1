@@ -70,6 +70,33 @@ if ($LASTEXITCODE -ne 0) {
     }
 }
 
+# Versionsnummer: Ein Build mit -Version muss die Version in die exe eintragen,
+# eine ungültige Version muss den Build abbrechen. Gebaut wird in einen eigenen Ordner,
+# damit die normale bin\RFID-Leser.exe unverändert bleibt.
+Write-Host 'Prüfe Versionsnummer im Build ...'
+$versionsExe = Join-Path $bin 'versionstest\RFID-Leser.exe'
+& (Join-Path $root 'build.ps1') -Version '9.8.7' -Ausgabe $versionsExe
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path $versionsExe)) {
+    Write-Host 'FEHLER  Build mit -Version 9.8.7 ist fehlgeschlagen'
+    $ergebnisExe = 1
+} else {
+    $attribut = [System.Reflection.Assembly]::LoadFile($versionsExe).GetCustomAttributes(
+        [System.Reflection.AssemblyInformationalVersionAttribute], $false)
+    if ($attribut.Count -eq 1 -and $attribut[0].InformationalVersion -eq '9.8.7') {
+        Write-Host 'OK      Build mit -Version 9.8.7 trägt die Version in die exe ein'
+    } else {
+        Write-Host 'FEHLER  Build mit -Version 9.8.7 hat die Version nicht eingetragen'
+        $ergebnisExe = 1
+    }
+}
+& (Join-Path $root 'build.ps1') -Version 'v1.x' -Ausgabe (Join-Path $bin 'versionstest\Ungueltig.exe') *> $null
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'OK      Build mit ungültiger Version wird abgebrochen'
+} else {
+    Write-Host 'FEHLER  Build mit ungültiger Version wurde nicht abgebrochen'
+    $ergebnisExe = 1
+}
+
 Write-Host 'Starte Tests ...'
 & $exe
 $ergebnisTests = $LASTEXITCODE

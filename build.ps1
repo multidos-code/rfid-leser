@@ -1,9 +1,22 @@
 ﻿# Baut die Programm-exe bin\RFID-Leser.exe.
 # QRCoder.dll (lib\) wird als Ressource eingebettet, damit die exe ohne DLL daneben läuft.
-# Aufruf:  pwsh -File .\build.ps1
+# Aufruf:  pwsh -File .\build.ps1                      (lokaler Build, Titel "Entwicklerversion")
+#          pwsh -File .\build.ps1 -Version 1.1.1       (Release-Build, Version steht in Titel und Dateieigenschaften)
+#          -Ausgabe <Pfad>  baut an einen anderen Ort als bin\RFID-Leser.exe (für Tests)
+
+param(
+    [string]$Version = '',
+    [string]$Ausgabe = ''
+)
 
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
+
+# Versionsnummer prüfen: nur Zahl.Zahl.Zahl (z. B. 1.1.1) ist erlaubt
+if ($Version -ne '' -and $Version -notmatch '^\d+\.\d+\.\d+$') {
+    Write-Host "FEHLER: Ungültige Version '$Version'. Erwartet wird z. B. 1.1.1"
+    exit 1
+}
 
 # Compiler von .NET Framework 4 (C# 5). Keine Downloads nötig.
 $fwDir = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
@@ -16,8 +29,27 @@ if (-not (Test-Path $csc)) {
 $bin = Join-Path $root 'bin'
 New-Item -ItemType Directory -Force -Path $bin | Out-Null
 $exe = Join-Path $bin 'RFID-Leser.exe'
+if ($Ausgabe -ne '') {
+    $exe = $Ausgabe
+    New-Item -ItemType Directory -Force -Path (Split-Path $exe) | Out-Null
+}
 
 $quellen = @(Get-ChildItem -Path (Join-Path $root 'src') -Filter '*.cs' | ForEach-Object { $_.FullName })
+
+# Bei Release-Builds: Versionsangaben als zusätzliche Quelldatei erzeugen
+# (erscheinen im Fenstertitel und in den Dateieigenschaften der exe)
+if ($Version -ne '') {
+    $versionDatei = Join-Path $bin 'VersionInfo.cs'
+    @(
+        'using System.Reflection;'
+        "[assembly: AssemblyVersion(""$Version.0"")]"
+        "[assembly: AssemblyFileVersion(""$Version.0"")]"
+        "[assembly: AssemblyInformationalVersion(""$Version"")]"
+        '[assembly: AssemblyProduct("RFID-Leser")]'
+        '[assembly: AssemblyCompany("multidos Hamburg GmbH")]'
+    ) | Set-Content -Path $versionDatei -Encoding utf8BOM
+    $quellen += $versionDatei
+}
 if ($quellen.Count -eq 0) {
     Write-Host 'FEHLER: Keine Quelldateien in src\ gefunden.'
     exit 1
@@ -46,7 +78,7 @@ $cscArgs = @(
     "/resource:$qrDll,QRCoder.dll", "/resource:$readme,README.md"
 ) + $quellen
 
-Write-Host 'Baue RFID-Leser.exe ...'
+Write-Host ('Baue RFID-Leser.exe ' + $(if ($Version) { 'Version ' + $Version } else { '(Entwicklerversion)' }) + ' ...')
 & $csc @cscArgs
 if ($LASTEXITCODE -ne 0) {
     Write-Host 'FEHLER: Build fehlgeschlagen.'
