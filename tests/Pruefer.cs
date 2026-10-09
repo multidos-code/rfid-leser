@@ -40,6 +40,15 @@ namespace RfidLeser.Tests
             }
         }
 
+        /// <summary>Prüft, ob zwei Kommazahlen bis auf 0,001 gleich sind (Rundungsfehler erlaubt).</summary>
+        public static void IstNahe(double erwartet, double tatsaechlich)
+        {
+            if (Math.Abs(erwartet - tatsaechlich) > 0.001)
+            {
+                throw new PruefFehler("erwartet <" + erwartet + ">, erhalten <" + tatsaechlich + ">");
+            }
+        }
+
         /// <summary>Prüft, ob eine Bedingung wahr ist.</summary>
         public static void IstWahr(bool bedingung, string meldung)
         {
