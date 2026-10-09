@@ -22,8 +22,9 @@ namespace RfidLeser.Tests
 
             Console.WriteLine("RFID-Leser Tests");
 
-            // Neue Testgruppen hier eintragen, z. B.: ChipParserTests.Alle();
-            // (Bausteine werden nacheinander ergänzt.)
+            ChipParserTests.Alle();
+
+            // Weitere Testgruppen hier eintragen (Bausteine werden nacheinander ergänzt).
 
             Console.WriteLine();
             Console.WriteLine("Ergebnis: " + Pruefer.Bestanden + " bestanden, " + Pruefer.Fehlgeschlagen + " fehlgeschlagen");
