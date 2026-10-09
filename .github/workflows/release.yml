@@ -1,0 +1,53 @@
+# Release-Build: Bei jedem Push auf main werden alle Tests ausgeführt, die exe mit der
+# nächsten Versionsnummer gebaut und als GitHub-Release zum Download bereitgestellt.
+# Schlägt ein Test fehl, wird KEIN Release erstellt.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# Recht, Versionsmarken und Releases anzulegen
+permissions:
+  contents: write
+
+# Nie zwei Release-Läufe gleichzeitig (sonst könnten beide dieselbe Nummer vergeben)
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Code holen (inkl. aller Versionsmarken)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tests ausführen
+        shell: pwsh
+        run: ./test.ps1
+
+      - name: Nächste Versionsnummer bestimmen
+        id: version
+        shell: pwsh
+        run: |
+          $version = ./naechste-version.ps1
+          Write-Host "Neue Version: $version"
+          "nummer=$version" >> $env:GITHUB_OUTPUT
+
+      - name: exe mit Versionsnummer bauen
+        shell: pwsh
+        run: ./build.ps1 -Version '${{ steps.version.outputs.nummer }}'
+
+      - name: Release mit exe veröffentlichen
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v${{ steps.version.outputs.nummer }}'
+          gh release create $tag bin/RFID-Leser.exe `
+            --target $env:GITHUB_SHA `
+            --title "RFID-Leser $tag" `
+            --generate-notes
