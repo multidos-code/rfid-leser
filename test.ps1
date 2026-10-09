@@ -89,6 +89,23 @@ if ($LASTEXITCODE -ne 0 -or -not (Test-Path $versionsExe)) {
         $ergebnisExe = 1
     }
 }
+$snapshotExe = Join-Path $bin 'versionstest\Snapshot.exe'
+& (Join-Path $root 'build.ps1') -Version '9.8.7-SNAPSHOT' -Ausgabe $snapshotExe *> $null
+if ($LASTEXITCODE -eq 0 -and (Test-Path $snapshotExe)) {
+    $snapshot = [System.Reflection.Assembly]::LoadFile($snapshotExe)
+    $info = $snapshot.GetCustomAttributes([System.Reflection.AssemblyInformationalVersionAttribute], $false)
+    $datei = $snapshot.GetCustomAttributes([System.Reflection.AssemblyFileVersionAttribute], $false)
+    if ($info.Count -eq 1 -and $info[0].InformationalVersion -eq '9.8.7-SNAPSHOT' -and
+        $datei.Count -eq 1 -and $datei[0].Version -eq '9.8.7.0') {
+        Write-Host 'OK      Build mit Testversion 9.8.7-SNAPSHOT trägt Version korrekt ein'
+    } else {
+        Write-Host 'FEHLER  Build mit Testversion 9.8.7-SNAPSHOT hat die Version falsch eingetragen'
+        $ergebnisExe = 1
+    }
+} else {
+    Write-Host 'FEHLER  Build mit Testversion 9.8.7-SNAPSHOT ist fehlgeschlagen'
+    $ergebnisExe = 1
+}
 & (Join-Path $root 'build.ps1') -Version 'v1.x' -Ausgabe (Join-Path $bin 'versionstest\Ungueltig.exe') *> $null
 if ($LASTEXITCODE -ne 0) {
     Write-Host 'OK      Build mit ungültiger Version wird abgebrochen'
