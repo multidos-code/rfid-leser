@@ -23,6 +23,7 @@ namespace RfidLeser.Tests
             Console.WriteLine("RFID-Leser Tests");
 
             ChipParserTests.Alle();
+            ReaderSucheTests.Alle();
 
             // Weitere Testgruppen hier eintragen (Bausteine werden nacheinander ergänzt).
 
