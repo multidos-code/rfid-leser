@@ -25,6 +25,7 @@ namespace RfidLeser.Tests
             ChipParserTests.Alle();
             ReaderSucheTests.Alle();
             Code128Tests.Alle();
+            QrErzeugerTests.Alle();
 
             // Weitere Testgruppen hier eintragen (Bausteine werden nacheinander ergänzt).
 
