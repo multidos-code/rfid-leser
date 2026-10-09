@@ -28,6 +28,7 @@ namespace RfidLeser.Tests
             Code128Tests.Alle();
             QrErzeugerTests.Alle();
             SeitenLayoutTests.Alle();
+            VersionsnummerTests.Alle();
 
             // Weitere Testgruppen hier eintragen (Bausteine werden nacheinander ergänzt).
 
