@@ -16,6 +16,7 @@ namespace RfidLeser
         private readonly Label lblLayoutFehler;
         private readonly Button btnNeu;
         private readonly Button btnDrucken;
+        private readonly Button btnHilfe;
         private readonly NumericUpDown nudBarcodeBreite;
         private readonly NumericUpDown nudBarcodeHoehe;
         private readonly NumericUpDown nudQrKante;
@@ -27,7 +28,8 @@ namespace RfidLeser
         public Hauptfenster()
         {
             Text = "RFID-Leser";
-            ClientSize = new Size(620, 400);
+            ClientSize = new Size(620, 450);
+            KeyPreview = true;
             FormBorderStyle = FormBorderStyle.FixedSingle;
             MaximizeBox = false;
             StartPosition = FormStartPosition.CenterScreen;
@@ -68,6 +70,13 @@ namespace RfidLeser
             btnDrucken.Enabled = false;
             btnDrucken.Click += delegate { Drucken(); };
 
+            btnHilfe = new Button();
+            btnHilfe.Text = "Hilfe (F1)";
+            btnHilfe.Location = new Point(480, 400);
+            btnHilfe.Size = new Size(120, 36);
+            btnHilfe.Font = new Font("Segoe UI", 10F);
+            btnHilfe.Click += delegate { ZeigeHilfe(); };
+
             GroupBox gruppe = new GroupBox();
             gruppe.Text = "Größen in mm";
             gruppe.Location = new Point(20, 220);
@@ -107,6 +116,17 @@ namespace RfidLeser
             Controls.Add(btnDrucken);
             Controls.Add(gruppe);
             Controls.Add(lblLayoutFehler);
+            Controls.Add(btnHilfe);
+
+            // F1 öffnet die Hilfe, egal welches Feld gerade den Fokus hat
+            KeyDown += delegate(object sender, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.F1)
+                {
+                    e.Handled = true;
+                    ZeigeHilfe();
+                }
+            };
 
             // Gespeicherte Größen laden, erst danach Änderungen speichern
             Einstellungen einstellungen = Einstellungen.Laden();
@@ -121,6 +141,15 @@ namespace RfidLeser
             Shown += delegate { StarteLesen(); };
 
             AktualisiereDruckStatus();
+        }
+
+        /// <summary>Öffnet das Hilfefenster über dem Hauptfenster.</summary>
+        private void ZeigeHilfe()
+        {
+            using (Hilfefenster hilfe = new Hilfefenster())
+            {
+                hilfe.ShowDialog(this);
+            }
         }
 
         /// <summary>Erzeugt ein Beschriftungsfeld an fester Stelle.</summary>
