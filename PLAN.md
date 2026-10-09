@@ -109,3 +109,35 @@ Das Testprogramm kompiliert die Logik-Dateien aus `src/` (nicht `Program.cs`/For
   Leerzeile + `Co-Authored-By: Claude Haiku 5.5 <noreply@anthropic.com>`.
 - Nicht nach `main` mergen, nicht pushen.
 
+
+---
+
+# Erweiterung v1.1: Hilfe in der exe (verbindlich)
+
+Branch `feature/hilfe`. README.md (Inhalt fertig, NICHT inhaltlich ändern) wird angezeigt.
+
+8. **HilfeText** (`src\HilfeText.cs`, Logik, unit-getestet):
+   - `List<HilfeZeile> HilfeText.Zerlege(string markdown)`; `HilfeZeile` hat
+     `string Text` und `bool IstUeberschrift`.
+   - Zeilen mit `#`, `##`, `###` am Anfang → Überschrift, Rauten + folgendes Leerzeichen entfernt.
+   - `**` und Backticks (`) werden aus allen Zeilen entfernt.
+   - Zeile `---` → Leerzeile. Leerzeilen bleiben erhalten. Listenpunkte (`- `, `1. `) bleiben unverändert.
+   - `string HilfeText.LadeAusRessource()` liest die eingebettete Ressource `README.md`
+     (UTF-8) aus der ausführenden Assembly; fehlt sie → verständlicher deutscher Ersatztext.
+   Tests: H1/H2/H3 erkannt, ** entfernt, Backticks entfernt, --- wird leer, normale Zeile
+   bleibt, Listenpunkt bleibt, leere Eingabe → leere Liste, null → leere Liste.
+
+9. **Build + Ressource**: build.ps1 bettet `README.md` mit `/resource:...,README.md` ein.
+   test.ps1 bettet sie ebenfalls ins Testprogramm ein und es gibt einen Test, dass
+   `LadeAusRessource()` Text liefert, der „Reader und andere Programme“ enthält.
+   Zusätzlich prüft test.ps1 NACH dem Build per Reflexion, dass `bin\RFID-Leser.exe`
+   die Ressource `README.md` enthält (sonst Exit-Code != 0).
+
+10. **Hilfefenster** (`src\Hilfefenster.cs`, nicht unit-getestet):
+   - Eigenes Fenster „RFID-Leser – Hilfe“, ca. 700 x 600, größenveränderbar,
+     RichTextBox nur lesen, Segoe UI 10pt, Überschriften fett 12pt, scrollbar, Knopf „Schließen“.
+   - Hauptfenster: neuer Knopf „Hilfe“ (gut sichtbar, z. B. rechts neben/unter den
+     anderen Knöpfen, Fenster ggf. vergrößern, nichts überlappen) und Taste F1
+     (`KeyPreview = true`). Öffnet das Hilfefenster (nicht modal blockierend ist egal; ShowDialog ok).
+
+Commits: (a) Tests+HilfeText, (b) Ressource in build/test, (c) Hilfefenster + Knopf.
