@@ -34,10 +34,16 @@ $referenzen = @(
     'System.Management.dll', $qrDll
 ) -join ','
 
+$readme = Join-Path $root 'README.md'
+if (-not (Test-Path $readme)) {
+    Write-Host "FEHLER: README.md fehlt unter $readme"
+    exit 1
+}
+
 $cscArgs = @(
     '/nologo', '/target:winexe', '/langversion:5', '/codepage:65001', '/optimize+',
     '/platform:anycpu', "/out:$exe", "/reference:$referenzen",
-    "/resource:$qrDll,QRCoder.dll"
+    "/resource:$qrDll,QRCoder.dll", "/resource:$readme,README.md"
 ) + $quellen
 
 Write-Host 'Baue RFID-Leser.exe ...'

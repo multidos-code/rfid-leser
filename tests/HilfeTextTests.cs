@@ -65,6 +65,10 @@ namespace RfidLeser.Tests
                 Pruefer.IstWahr(!zeilen[1].IstUeberschrift, "nummerierter Punkt sollte keine Überschrift sein");
             });
 
+            Pruefer.Test("LadeAusRessource liefert den Hilfetext aus der eingebetteten README.md", () =>
+                Pruefer.IstWahr(HilfeText.LadeAusRessource().Contains("Reader und andere Programme"),
+                    "in der Ressource fehlt der erwartete Text (README.md nicht eingebettet?)"));
+
             Pruefer.Test("leere Eingabe ergibt leere Liste", () =>
                 Pruefer.IstGleich(0, HilfeText.Zerlege("").Count));
 

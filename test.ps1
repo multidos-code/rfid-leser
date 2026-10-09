@@ -33,9 +33,15 @@ $referenzen = @(
     'System.Management.dll', $qrDll
 ) -join ','
 
+$readme = Join-Path $root 'README.md'
+if (-not (Test-Path $readme)) {
+    Write-Host "FEHLER: README.md fehlt unter $readme"
+    exit 1
+}
+
 $cscArgs = @(
     '/nologo', '/target:exe', '/langversion:5', '/codepage:65001', '/debug-',
-    "/out:$exe", "/reference:$referenzen"
+    "/out:$exe", "/reference:$referenzen", "/resource:$readme,README.md"
 ) + $quellen
 
 Write-Host 'Kompiliere Tests ...'
@@ -45,6 +51,31 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
+# Programm-exe bauen (build.ps1) und prüfen, ob die Hilfe-Datei README.md eingebettet ist.
+# Die Prüfung läuft per Reflexion (Metadaten lesen), die exe wird dafür NICHT gestartet.
+Write-Host 'Baue Programm-exe (build.ps1) ...'
+& (Join-Path $root 'build.ps1')
+$ergebnisExe = 0
+if ($LASTEXITCODE -ne 0) {
+    Write-Host 'FEHLER: build.ps1 ist fehlgeschlagen.'
+    $ergebnisExe = 1
+} else {
+    $programmExe = Join-Path $bin 'RFID-Leser.exe'
+    $ressourcen = [System.Reflection.Assembly]::LoadFile($programmExe).GetManifestResourceNames()
+    if ($ressourcen -contains 'README.md') {
+        Write-Host 'OK      RFID-Leser.exe enthält die Ressource README.md'
+    } else {
+        Write-Host 'FEHLER  RFID-Leser.exe enthält die Ressource README.md nicht'
+        $ergebnisExe = 1
+    }
+}
+
 Write-Host 'Starte Tests ...'
 & $exe
-exit $LASTEXITCODE
+$ergebnisTests = $LASTEXITCODE
+
+# Gesamtergebnis: nur grün, wenn Programm-exe UND Tests in Ordnung sind
+if ($ergebnisExe -ne 0 -or $ergebnisTests -ne 0) {
+    exit 1
+}
+exit 0
