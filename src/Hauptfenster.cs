@@ -27,7 +27,7 @@ namespace RfidLeser
 
         public Hauptfenster()
         {
-            Text = "RFID-Leser";
+            Text = Versionsnummer.Fenstertitel(Versionsnummer.AusProgramm());
             ClientSize = new Size(620, 450);
             KeyPreview = true;
             FormBorderStyle = FormBorderStyle.FixedSingle;

@@ -89,6 +89,18 @@ Voraussetzung: Windows mit .NET Framework 4 (der Compiler `csc.exe` liegt unter
 
 - Programm bauen: `pwsh -File .\build.ps1` (erzeugt `bin\RFID-Leser.exe`)
 - Tests ausführen: `pwsh -File .\test.ps1` (Exit-Code 0 = alles grün)
+- Lokal gebaute exe zeigt im Titel „(Entwicklerversion)“.
+
+### Releases (automatisch)
+
+Bei jedem Push auf `main` läuft auf GitHub der Workflow `.github/workflows/release.yml`:
+Tests ausführen → nächste Versionsnummer bestimmen → exe bauen → GitHub-Release mit
+der exe zum Download. Schlägt ein Test fehl, entsteht kein Release.
+
+- Versionsnummer: höchste Versionsmarke, letzte Stelle + 1 (v1.1 → v1.1.1 → v1.1.2 …).
+- Größerer Versionssprung: Versionsmarke von Hand setzen, z. B.
+  `git tag v1.2` und `git push origin v1.2` – der nächste Push auf main wird dann v1.2.1.
+- Die Version steht im Fenstertitel und in den Dateieigenschaften der exe.
 
 ### Technik
 
