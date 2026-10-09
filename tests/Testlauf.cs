@@ -24,6 +24,7 @@ namespace RfidLeser.Tests
 
             ChipParserTests.Alle();
             ReaderSucheTests.Alle();
+            HilfeTextTests.Alle();
             Code128Tests.Alle();
             QrErzeugerTests.Alle();
             SeitenLayoutTests.Alle();
