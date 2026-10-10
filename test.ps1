@@ -114,6 +114,18 @@ if ($LASTEXITCODE -ne 0) {
     $ergebnisExe = 1
 }
 
+# release-info.ps1 muss bei Erfolg ausdrücklich Exit-Code 0 melden – auch wenn es (wie im
+# GitHub-Ablauf) direkt in einer PowerShell-Sitzung aufgerufen wird, in der vorher noch
+# kein Exit-Code gesetzt war.
+$global:LASTEXITCODE = $null
+$null = & (Join-Path $root 'release-info.ps1')
+if ($LASTEXITCODE -eq 0) {
+    Write-Host 'OK      release-info.ps1 meldet bei Erfolg Exit-Code 0'
+} else {
+    Write-Host "FEHLER  release-info.ps1 meldet bei Erfolg Exit-Code <$LASTEXITCODE> statt 0"
+    $ergebnisExe = 1
+}
+
 Write-Host 'Starte Tests ...'
 & $exe
 $ergebnisTests = $LASTEXITCODE

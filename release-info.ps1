@@ -37,3 +37,6 @@ if (-not $testversion -and $NotizenDatei -ne '') {
 
 "version=$version"
 "testversion=$($testversion.ToString().ToLower())"
+
+# Erfolg ausdrücklich melden (sonst bleibt der Exit-Code beim direkten Aufruf leer)
+exit 0
