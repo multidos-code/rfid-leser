@@ -91,16 +91,28 @@ Voraussetzung: Windows mit .NET Framework 4 (der Compiler `csc.exe` liegt unter
 - Tests ausführen: `pwsh -File .\test.ps1` (Exit-Code 0 = alles grün)
 - Lokal gebaute exe zeigt im Titel „(Entwicklerversion)“.
 
-### Releases (automatisch)
+### Versionen, Testversionen und Releases
 
-Bei jedem Push auf `main` läuft auf GitHub der Workflow `.github/workflows/release.yml`:
-Tests ausführen → nächste Versionsnummer bestimmen → exe bauen → GitHub-Release mit
-der exe zum Download. Schlägt ein Test fehl, entsteht kein Release.
+Die Version steht in `version.txt`. Bei jedem Push auf `main` (und bei Pull Requests)
+läuft auf GitHub `.github/workflows/release.yml`: Tests → Build → exe als Download.
+Schlägt ein Test fehl, wird nichts veröffentlicht.
 
-- Versionsnummer: höchste Versionsmarke, letzte Stelle + 1 (v1.1 → v1.1.1 → v1.1.2 …).
-- Größerer Versionssprung: Versionsmarke von Hand setzen, z. B.
-  `git tag v1.2` und `git push origin v1.2` – der nächste Push auf main wird dann v1.2.1.
+- **Testversion** (`version.txt` = z. B. `1.2.0-SNAPSHOT`): Die exe liegt 7 Tage im
+  GitHub-Lauf unter „Artifacts“ zum Download, zum Prüfen in einer Testumgebung.
+  Kein Release. Im Fenstertitel steht „(Testversion)“.
+- **Freigabe** (`version.txt` = z. B. `1.2.0`): Zusätzlich entsteht das GitHub-Release
+  `v1.2.0` mit der exe. Der Text der Release-Seite kommt aus dem Abschnitt `## 1.2.0`
+  in `CHANGELOG.md` – fehlt er, bricht der Lauf ab.
+- Ablauf einer Freigabe:
+  1. `CHANGELOG.md`: Abschnitt `## 1.2.0` in einfacher Sprache schreiben.
+  2. `version.txt` auf `1.2.0` setzen, committen, nach `main` pushen → Release entsteht.
+  3. `version.txt` auf die nächste geplante Version mit `-SNAPSHOT` setzen
+     (z. B. `1.2.1-SNAPSHOT`), committen, pushen.
+- Eine schon veröffentlichte Version wird nie überschrieben (Lauf gibt eine Warnung aus).
+- Versionsnummern: letzte Stelle für Fehlerbehebungen (1.2.0 → 1.2.1),
+  mittlere Stelle für neue Funktionen (1.2.0 → 1.3.0).
 - Die Version steht im Fenstertitel und in den Dateieigenschaften der exe.
+  Lokal gebaute exe: „(Entwicklerversion)“. Werkzeug: `pwsh -File .\release-info.ps1`.
 
 ### Technik
 

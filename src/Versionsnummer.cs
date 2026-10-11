@@ -6,59 +6,114 @@ using System.Text.RegularExpressions;
 namespace RfidLeser
 {
     /// <summary>
-    /// Versionsnummer: nächste Version aus vorhandenen Versionsmarken (Git-Tags) berechnen
-    /// und den Fenstertitel bilden. Wird auch vom Release-Build auf GitHub benutzt.
+    /// Versionsnummer aus der Datei version.txt: prüfen, Testversion (-SNAPSHOT) erkennen,
+    /// Fenstertitel bilden und den passenden Abschnitt aus CHANGELOG.md herauslösen.
+    /// Wird auch vom Release-Build auf GitHub benutzt.
     /// </summary>
     public static class Versionsnummer
     {
         private const string Programmname = "RFID-Leser";
-        private const string ErsteVersion = "1.0.0";
+        private const string TestKennung = "-SNAPSHOT";
 
-        // Versionsmarken wie "v1.1" oder "v1.1.2" (dritte Stelle optional)
-        private static readonly Regex MarkenMuster = new Regex(@"^v(\d+)\.(\d+)(?:\.(\d+))?$");
-        private static readonly Regex VersionMuster = new Regex(@"^\d+\.\d+\.\d+$");
+        // Erlaubt: 1.2.0 (freigegeben) oder 1.2.0-SNAPSHOT (Testversion)
+        private static readonly Regex VersionMuster = new Regex(@"^(\d+\.\d+\.\d+)(-SNAPSHOT)?$");
 
-        /// <summary>
-        /// Liefert die nächste Version: höchste vorhandene Versionsmarke, letzte Stelle + 1
-        /// (z. B. v1.1 → 1.1.1, v1.1.2 → 1.1.3). Ohne Versionsmarken: 1.0.0.
-        /// Andere Markierungen (z. B. "test", "v2.0-beta") werden ignoriert.
-        /// </summary>
-        public static string Naechste(IEnumerable<string> tags)
+        /// <summary>true, wenn die Version die Form Zahl.Zahl.Zahl oder Zahl.Zahl.Zahl-SNAPSHOT hat.</summary>
+        public static bool IstGueltig(string version)
         {
-            int[] hoechste = null;
-            if (tags != null)
-            {
-                foreach (string tag in tags)
-                {
-                    int[] teile = Zerlege(tag);
-                    if (teile != null && (hoechste == null || IstGroesser(teile, hoechste)))
-                    {
-                        hoechste = teile;
-                    }
-                }
-            }
-
-            if (hoechste == null)
-            {
-                return ErsteVersion;
-            }
-            return hoechste[0] + "." + hoechste[1] + "." + (hoechste[2] + 1);
+            return version != null && VersionMuster.IsMatch(version);
         }
 
-        /// <summary>Fenstertitel mit Version, z. B. "RFID-Leser v1.1.1". Ohne Version: Entwicklerversion.</summary>
+        /// <summary>true bei einer Testversion (endet auf -SNAPSHOT) – dafür gibt es kein Release.</summary>
+        public static bool IstTestversion(string version)
+        {
+            return version != null && version.EndsWith(TestKennung, StringComparison.Ordinal);
+        }
+
+        /// <summary>Nur die Zahlen, z. B. "1.2.0" aus "1.2.0-SNAPSHOT" (für die Dateieigenschaften der exe).</summary>
+        public static string Zahlenteil(string version)
+        {
+            Match treffer = VersionMuster.Match(version ?? "");
+            return treffer.Success ? treffer.Groups[1].Value : null;
+        }
+
+        /// <summary>
+        /// Liest die Version aus dem Inhalt von version.txt (BOM, Leerzeichen, Zeilenende werden entfernt).
+        /// Wirft ArgumentException, wenn der Inhalt keine gültige Version ist.
+        /// </summary>
+        public static string AusVersionsdatei(string inhalt)
+        {
+            string version = (inhalt ?? "").Trim().TrimStart('﻿').Trim();
+            if (!IstGueltig(version))
+            {
+                throw new ArgumentException(
+                    "version.txt enthält keine gültige Version: '" + version + "'. Erwartet z. B. 1.2.0 oder 1.2.0-SNAPSHOT.");
+            }
+            return version;
+        }
+
+        /// <summary>
+        /// Fenstertitel, z. B. "RFID-Leser v1.2.0" oder "RFID-Leser v1.2.0-SNAPSHOT (Testversion)".
+        /// Ohne Version (lokaler Build): "RFID-Leser (Entwicklerversion)".
+        /// </summary>
         public static string Fenstertitel(string version)
         {
             if (string.IsNullOrEmpty(version))
             {
                 return Programmname + " (Entwicklerversion)";
             }
+            if (IstTestversion(version))
+            {
+                return Programmname + " v" + version + " (Testversion)";
+            }
             return Programmname + " v" + version;
         }
 
-        /// <summary>true, wenn die Version die Form Zahl.Zahl.Zahl hat (z. B. "1.1.1").</summary>
-        public static bool IstGueltig(string version)
+        /// <summary>
+        /// Liefert den Text unter der Überschrift "## {version}" bis zur nächsten "## "-Überschrift,
+        /// ohne Leerzeilen am Anfang und Ende. Hinter der Versionsnummer darf ein Zusatz stehen
+        /// (z. B. ein Datum). Fehlt der Abschnitt oder ist er leer: null.
+        /// </summary>
+        public static string ChangelogAbschnitt(string changelog, string version)
         {
-            return version != null && VersionMuster.IsMatch(version);
+            if (changelog == null || string.IsNullOrEmpty(version))
+            {
+                return null;
+            }
+
+            Regex ueberschrift = new Regex("^## " + Regex.Escape(version) + "( |$)");
+            List<string> abschnitt = new List<string>();
+            bool drin = false;
+
+            foreach (string roh in changelog.Split('\n'))
+            {
+                string zeile = roh.TrimEnd('\r');
+                if (zeile.StartsWith("## "))
+                {
+                    if (drin)
+                    {
+                        break;
+                    }
+                    drin = ueberschrift.IsMatch(zeile);
+                    continue;
+                }
+                if (drin)
+                {
+                    abschnitt.Add(zeile);
+                }
+            }
+
+            // Leerzeilen am Anfang und Ende entfernen
+            while (abschnitt.Count > 0 && abschnitt[0].Trim() == "")
+            {
+                abschnitt.RemoveAt(0);
+            }
+            while (abschnitt.Count > 0 && abschnitt[abschnitt.Count - 1].Trim() == "")
+            {
+                abschnitt.RemoveAt(abschnitt.Count - 1);
+            }
+
+            return abschnitt.Count == 0 ? null : string.Join("\r\n", abschnitt);
         }
 
         /// <summary>
@@ -78,35 +133,6 @@ namespace RfidLeser
                 return null;
             }
             return ((AssemblyInformationalVersionAttribute)attribute[0]).InformationalVersion;
-        }
-
-        /// <summary>Zerlegt "v1.2" bzw. "v1.2.3" in Zahlen; fehlende dritte Stelle = 0. Ungültig → null.</summary>
-        private static int[] Zerlege(string tag)
-        {
-            if (tag == null)
-            {
-                return null;
-            }
-            Match treffer = MarkenMuster.Match(tag.Trim());
-            if (!treffer.Success)
-            {
-                return null;
-            }
-            int dritte = treffer.Groups[3].Success ? int.Parse(treffer.Groups[3].Value) : 0;
-            return new int[] { int.Parse(treffer.Groups[1].Value), int.Parse(treffer.Groups[2].Value), dritte };
-        }
-
-        /// <summary>Vergleicht zwei Versionen Stelle für Stelle als Zahlen.</summary>
-        private static bool IstGroesser(int[] a, int[] b)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                if (a[i] != b[i])
-                {
-                    return a[i] > b[i];
-                }
-            }
-            return false;
         }
     }
 }

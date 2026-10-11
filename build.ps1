@@ -12,11 +12,13 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = $PSScriptRoot
 
-# Versionsnummer prüfen: nur Zahl.Zahl.Zahl (z. B. 1.1.1) ist erlaubt
-if ($Version -ne '' -and $Version -notmatch '^\d+\.\d+\.\d+$') {
-    Write-Host "FEHLER: Ungültige Version '$Version'. Erwartet wird z. B. 1.1.1"
+# Versionsnummer prüfen: Zahl.Zahl.Zahl (freigegeben) oder Zahl.Zahl.Zahl-SNAPSHOT (Testversion)
+if ($Version -ne '' -and $Version -notmatch '^(\d+\.\d+\.\d+)(-SNAPSHOT)?$') {
+    Write-Host "FEHLER: Ungültige Version '$Version'. Erwartet wird z. B. 1.2.0 oder 1.2.0-SNAPSHOT"
     exit 1
 }
+# Dateieigenschaften der exe erlauben nur Zahlen (1.2.0-SNAPSHOT -> 1.2.0)
+$zahlenteil = if ($Version -ne '') { $Matches[1] } else { '' }
 
 # Compiler von .NET Framework 4 (C# 5). Keine Downloads nötig.
 $fwDir = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'
@@ -42,8 +44,8 @@ if ($Version -ne '') {
     $versionDatei = Join-Path $bin 'VersionInfo.cs'
     @(
         'using System.Reflection;'
-        "[assembly: AssemblyVersion(""$Version.0"")]"
-        "[assembly: AssemblyFileVersion(""$Version.0"")]"
+        "[assembly: AssemblyVersion(""$zahlenteil.0"")]"
+        "[assembly: AssemblyFileVersion(""$zahlenteil.0"")]"
         "[assembly: AssemblyInformationalVersion(""$Version"")]"
         '[assembly: AssemblyProduct("RFID-Leser")]'
         '[assembly: AssemblyCompany("multidos Hamburg GmbH")]'

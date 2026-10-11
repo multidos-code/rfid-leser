@@ -1,53 +1,90 @@
-# Release-Build: Bei jedem Push auf main werden alle Tests ausgeführt, die exe mit der
-# nächsten Versionsnummer gebaut und als GitHub-Release zum Download bereitgestellt.
-# Schlägt ein Test fehl, wird KEIN Release erstellt.
-name: Release
+# Build und Release nach dem Vorbild von multidos-utilities.
+#
+# Die Version steht in version.txt:
+#   - 1.2.0-SNAPSHOT (Testversion): Tests + Build, die exe liegt 7 Tage als Download im
+#     GitHub-Lauf ("Artifacts") – zum Prüfen in einer Testumgebung. Kein Release.
+#   - 1.2.0 (freigegeben): zusätzlich GitHub-Release v1.2.0 mit der exe und dem Text aus
+#     dem Abschnitt "## 1.2.0" in CHANGELOG.md.
+# Schlägt ein Test fehl, wird nichts veröffentlicht. Eine bestehende Version wird nie überschrieben.
+# Bei Pull Requests laufen nur Tests und Build.
+name: Build und Release
 
 on:
   push:
     branches: [main]
+  pull_request:
 
-# Recht, Versionsmarken und Releases anzulegen
 permissions:
-  contents: write
+  contents: read
 
-# Nie zwei Release-Läufe gleichzeitig (sonst könnten beide dieselbe Nummer vergeben)
+# Nie zwei Läufe auf main gleichzeitig (sonst könnten beide dieselbe Version veröffentlichen)
 concurrency:
-  group: release
+  group: build-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  # Warnungen zu veralteten Node-Versionen der GitHub-Bausteine unterdrücken (wie in multidos-utilities)
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
-  release:
+  build:
     runs-on: windows-latest
+    permissions:
+      contents: write   # nötig, um Releases anzulegen
+    defaults:
+      run:
+        shell: pwsh
     steps:
-      - name: Code holen (inkl. aller Versionsmarken)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Code holen
+        uses: actions/checkout@v7
+
+      # Bei einer Freigabe wird hier auch der Changelog-Abschnitt geprüft und nach
+      # release-notes.md geschrieben – fehlt er, bricht der Lauf sofort ab.
+      - name: Version aus version.txt lesen
+        id: info
+        run: |
+          $ausgabe = ./release-info.ps1 -NotizenDatei release-notes.md
+          $code = $LASTEXITCODE
+          $ausgabe | ForEach-Object { Write-Host $_ }
+          if ($code -ne 0) { exit 1 }
+          $ausgabe | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
 
       - name: Tests ausführen
-        shell: pwsh
         run: ./test.ps1
 
-      - name: Nächste Versionsnummer bestimmen
-        id: version
-        shell: pwsh
-        run: |
-          $version = ./naechste-version.ps1
-          Write-Host "Neue Version: $version"
-          "nummer=$version" >> $env:GITHUB_OUTPUT
-
       - name: exe mit Versionsnummer bauen
-        shell: pwsh
-        run: ./build.ps1 -Version '${{ steps.version.outputs.nummer }}'
+        run: ./build.ps1 -Version '${{ steps.info.outputs.version }}'
 
-      - name: Release mit exe veröffentlichen
-        shell: pwsh
+      - name: exe als Download im Lauf ablegen (7 Tage)
+        uses: actions/upload-artifact@v7
+        with:
+          name: RFID-Leser-${{ steps.info.outputs.version }}
+          path: bin/RFID-Leser.exe
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Prüfen, ob die Version schon veröffentlicht ist
+        id: guard
+        if: github.event_name == 'push' && steps.info.outputs.testversion == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = 'v${{ steps.version.outputs.nummer }}'
+          gh release view 'v${{ steps.info.outputs.version }}' --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host '::warning::Version v${{ steps.info.outputs.version }} ist bereits veröffentlicht – es wird nichts überschrieben. Bitte version.txt auf die nächste Version (z. B. mit -SNAPSHOT) setzen.'
+            "vorhanden=true" >> $env:GITHUB_OUTPUT
+          } else {
+            "vorhanden=false" >> $env:GITHUB_OUTPUT
+          }
+          exit 0
+
+      - name: Release veröffentlichen
+        if: steps.guard.outputs.vorhanden == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v${{ steps.info.outputs.version }}'
           gh release create $tag bin/RFID-Leser.exe `
             --target $env:GITHUB_SHA `
             --title "RFID-Leser $tag" `
-            --generate-notes
+            --notes-file release-notes.md

@@ -3,57 +3,84 @@ using System.Collections.Generic;
 
 namespace RfidLeser.Tests
 {
-    /// <summary>Tests für die Berechnung der nächsten Versionsnummer und den Fenstertitel.</summary>
+    /// <summary>Tests für Versionsdatei, Testversion/Freigabe, Fenstertitel und Changelog-Auszug.</summary>
     public static class VersionsnummerTests
     {
+        private const string BeispielChangelog =
+            "# Änderungsprotokoll\r\n" +
+            "\r\n" +
+            "## 1.2.0\r\n" +
+            "\r\n" +
+            "- Neue Funktion A.\r\n" +
+            "- Neue Funktion B.\r\n" +
+            "\r\n" +
+            "## 1.1.1\r\n" +
+            "\r\n" +
+            "- Fehler behoben.\r\n" +
+            "\r\n" +
+            "## 1.1\r\n" +
+            "\r\n" +
+            "- Hilfe ergänzt.\r\n";
+
         public static void Alle()
         {
             Console.WriteLine();
             Console.WriteLine("Versionsnummer");
 
-            Pruefer.Test("v1.1 wird zu 1.1.1", delegate
+            Pruefer.Test("Version gültig: Zahl.Zahl.Zahl", delegate
             {
-                Pruefer.IstGleich("1.1.1", Versionsnummer.Naechste(new[] { "v1.0", "v1.1" }));
+                Pruefer.IstWahr(Versionsnummer.IstGueltig("1.1.1"), "1.1.1 muss gültig sein");
+                Pruefer.IstWahr(Versionsnummer.IstGueltig("10.20.30"), "10.20.30 muss gültig sein");
             });
 
-            Pruefer.Test("dreistellige Version: letzte Stelle +1", delegate
+            Pruefer.Test("Version gültig: Zahl.Zahl.Zahl-SNAPSHOT", delegate
             {
-                Pruefer.IstGleich("1.1.3", Versionsnummer.Naechste(new[] { "v1.1", "v1.1.1", "v1.1.2" }));
+                Pruefer.IstWahr(Versionsnummer.IstGueltig("1.2.0-SNAPSHOT"), "1.2.0-SNAPSHOT muss gültig sein");
             });
 
-            Pruefer.Test("höchste Version zählt, nicht die Reihenfolge", delegate
+            Pruefer.Test("Version ungültig: andere Formen", delegate
             {
-                Pruefer.IstGleich("2.0.1", Versionsnummer.Naechste(new[] { "v2.0", "v1.9.9", "v1.1" }));
+                Pruefer.IstWahr(!Versionsnummer.IstGueltig("v1.1.1"), "v1.1.1 darf nicht gültig sein");
+                Pruefer.IstWahr(!Versionsnummer.IstGueltig("1.1"), "1.1 darf nicht gültig sein");
+                Pruefer.IstWahr(!Versionsnummer.IstGueltig("1.1.x"), "1.1.x darf nicht gültig sein");
+                Pruefer.IstWahr(!Versionsnummer.IstGueltig("1.2.0-snapshot"), "Kleinschreibung darf nicht gültig sein");
+                Pruefer.IstWahr(!Versionsnummer.IstGueltig("1.2.0-BETA"), "1.2.0-BETA darf nicht gültig sein");
+                Pruefer.IstWahr(!Versionsnummer.IstGueltig(""), "leer darf nicht gültig sein");
+                Pruefer.IstWahr(!Versionsnummer.IstGueltig(null), "null darf nicht gültig sein");
             });
 
-            Pruefer.Test("Zahlen werden als Zahlen verglichen (1.10 > 1.9)", delegate
+            Pruefer.Test("Testversion wird erkannt", delegate
             {
-                Pruefer.IstGleich("1.10.1", Versionsnummer.Naechste(new[] { "v1.9", "v1.10" }));
+                Pruefer.IstWahr(Versionsnummer.IstTestversion("1.2.0-SNAPSHOT"), "1.2.0-SNAPSHOT ist Testversion");
+                Pruefer.IstWahr(!Versionsnummer.IstTestversion("1.2.0"), "1.2.0 ist keine Testversion");
             });
 
-            Pruefer.Test("bewusst gesetztes v1.2 setzt Zählung dort fort", delegate
+            Pruefer.Test("Zahlenteil für Dateieigenschaften", delegate
             {
-                Pruefer.IstGleich("1.2.1", Versionsnummer.Naechste(new[] { "v1.1.5", "v1.2" }));
+                Pruefer.IstGleich("1.2.0", Versionsnummer.Zahlenteil("1.2.0-SNAPSHOT"));
+                Pruefer.IstGleich("1.2.0", Versionsnummer.Zahlenteil("1.2.0"));
             });
 
-            Pruefer.Test("fremde Markierungen werden ignoriert", delegate
+            Pruefer.Test("Versionsdatei: Leerzeichen und Zeilenende werden entfernt", delegate
             {
-                Pruefer.IstGleich("1.1.1", Versionsnummer.Naechste(new[] { "test", "v1.1", "v2.0-beta", "1.5" }));
+                Pruefer.IstGleich("1.2.0-SNAPSHOT", Versionsnummer.AusVersionsdatei("﻿ 1.2.0-SNAPSHOT \r\n"));
             });
 
-            Pruefer.Test("ohne Versionsmarken beginnt die Zählung bei 1.0.0", delegate
+            Pruefer.Test("Versionsdatei: ungültiger Inhalt wird abgelehnt", delegate
             {
-                Pruefer.IstGleich("1.0.0", Versionsnummer.Naechste(new string[0]));
+                Pruefer.Wirft<ArgumentException>(delegate { Versionsnummer.AusVersionsdatei("1.2"); });
+                Pruefer.Wirft<ArgumentException>(delegate { Versionsnummer.AusVersionsdatei(""); });
+                Pruefer.Wirft<ArgumentException>(delegate { Versionsnummer.AusVersionsdatei(null); });
             });
 
-            Pruefer.Test("null wird wie keine Versionsmarken behandelt", delegate
+            Pruefer.Test("Fenstertitel freigegebene Version", delegate
             {
-                Pruefer.IstGleich("1.0.0", Versionsnummer.Naechste(null));
+                Pruefer.IstGleich("RFID-Leser v1.2.0", Versionsnummer.Fenstertitel("1.2.0"));
             });
 
-            Pruefer.Test("Fenstertitel mit Version", delegate
+            Pruefer.Test("Fenstertitel Testversion", delegate
             {
-                Pruefer.IstGleich("RFID-Leser v1.1.1", Versionsnummer.Fenstertitel("1.1.1"));
+                Pruefer.IstGleich("RFID-Leser v1.2.0-SNAPSHOT (Testversion)", Versionsnummer.Fenstertitel("1.2.0-SNAPSHOT"));
             });
 
             Pruefer.Test("Fenstertitel ohne Version (lokaler Build)", delegate
@@ -62,13 +89,32 @@ namespace RfidLeser.Tests
                 Pruefer.IstGleich("RFID-Leser (Entwicklerversion)", Versionsnummer.Fenstertitel(""));
             });
 
-            Pruefer.Test("Version gültig: nur Zahl.Zahl.Zahl", delegate
+            Pruefer.Test("Changelog: Abschnitt der Version wird herausgelöst", delegate
             {
-                Pruefer.IstWahr(Versionsnummer.IstGueltig("1.1.1"), "1.1.1 muss gültig sein");
-                Pruefer.IstWahr(!Versionsnummer.IstGueltig("v1.1.1"), "v1.1.1 darf nicht gültig sein");
-                Pruefer.IstWahr(!Versionsnummer.IstGueltig("1.1"), "1.1 darf nicht gültig sein");
-                Pruefer.IstWahr(!Versionsnummer.IstGueltig("1.1.x"), "1.1.x darf nicht gültig sein");
-                Pruefer.IstWahr(!Versionsnummer.IstGueltig(null), "null darf nicht gültig sein");
+                Pruefer.IstGleich("- Neue Funktion A.\r\n- Neue Funktion B.",
+                    Versionsnummer.ChangelogAbschnitt(BeispielChangelog, "1.2.0"));
+            });
+
+            Pruefer.Test("Changelog: letzter Abschnitt bis Dateiende", delegate
+            {
+                Pruefer.IstGleich("- Hilfe ergänzt.", Versionsnummer.ChangelogAbschnitt(BeispielChangelog, "1.1"));
+            });
+
+            Pruefer.Test("Changelog: 1.1 trifft nicht 1.1.1 (exakte Überschrift)", delegate
+            {
+                Pruefer.IstGleich("- Fehler behoben.", Versionsnummer.ChangelogAbschnitt(BeispielChangelog, "1.1.1"));
+            });
+
+            Pruefer.Test("Changelog: Überschrift mit Zusatz (z. B. Datum) wird erkannt", delegate
+            {
+                Pruefer.IstGleich("- Text.", Versionsnummer.ChangelogAbschnitt("## 2.0.0 (09.10.2026)\n\n- Text.\n", "2.0.0"));
+            });
+
+            Pruefer.Test("Changelog: fehlender oder leerer Abschnitt ergibt null", delegate
+            {
+                Pruefer.IstNull(Versionsnummer.ChangelogAbschnitt(BeispielChangelog, "9.9.9"));
+                Pruefer.IstNull(Versionsnummer.ChangelogAbschnitt("## 3.0.0\n\n## 2.0.0\n- x\n", "3.0.0"));
+                Pruefer.IstNull(Versionsnummer.ChangelogAbschnitt(null, "1.2.0"));
             });
         }
     }
