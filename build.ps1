@@ -74,10 +74,17 @@ if (-not (Test-Path $readme)) {
     exit 1
 }
 
+# Programmsymbol (Desktop, Explorer, Taskleiste)
+$symbol = Join-Path $root 'assets\RFID-Leser.ico'
+if (-not (Test-Path $symbol)) {
+    Write-Host "FEHLER: Programmsymbol fehlt unter $symbol"
+    exit 1
+}
+
 $cscArgs = @(
     '/nologo', '/target:winexe', '/langversion:5', '/codepage:65001', '/optimize+',
     '/platform:anycpu', "/out:$exe", "/reference:$referenzen",
-    "/resource:$qrDll,QRCoder.dll", "/resource:$readme,README.md"
+    "/resource:$qrDll,QRCoder.dll", "/win32icon:$symbol", "/resource:$readme,README.md"
 ) + $quellen
 
 Write-Host ('Baue RFID-Leser.exe ' + $(if ($Version) { 'Version ' + $Version } else { '(Entwicklerversion)' }) + ' ...')

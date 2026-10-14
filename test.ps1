@@ -70,6 +70,20 @@ if ($LASTEXITCODE -ne 0) {
     }
 }
 
+# Programmsymbol: Die exe muss das Symbol aus assets\RFID-Leser.ico tragen.
+# Geprüft wird die blaue Hintergrundfarbe am linken Rand des ausgelesenen Symbols.
+if ($ergebnisExe -eq 0) {
+    Add-Type -AssemblyName System.Drawing
+    $symbol = [System.Drawing.Icon]::ExtractAssociatedIcon((Join-Path $bin 'RFID-Leser.exe')).ToBitmap()
+    $farbe = $symbol.GetPixel(2, 16)
+    if ([Math]::Abs($farbe.R - 31) -le 12 -and [Math]::Abs($farbe.G - 78) -le 12 -and [Math]::Abs($farbe.B - 121) -le 12) {
+        Write-Host 'OK      RFID-Leser.exe trägt das Programmsymbol'
+    } else {
+        Write-Host "FEHLER  RFID-Leser.exe trägt nicht das Programmsymbol (Farbe am Rand: $farbe)"
+        $ergebnisExe = 1
+    }
+}
+
 # Versionsnummer: Ein Build mit -Version muss die Version in die exe eintragen,
 # eine ungültige Version muss den Build abbrechen. Gebaut wird in einen eigenen Ordner,
 # damit die normale bin\RFID-Leser.exe unverändert bleibt.
