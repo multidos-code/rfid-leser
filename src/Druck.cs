@@ -71,20 +71,47 @@ namespace RfidLeser
                 }
             }
 
-            ZeichneKlartext(g, code.Klartext, nummer);
+            // Die Schrift rückt laut Layout in den weißen Rand des QR-Codes, darf aber nie in die
+            // schwarzen Module ragen (bei kleinen QR-Codes ist der weiße Rand schmaler als 4 mm).
+            Rechteck klartext = code.Klartext;
+            double unterkanteModule = y0 + anzahl * modulGroesse;
+            if (klartext.Y < unterkanteModule)
+            {
+                klartext = new Rechteck(klartext.X, unterkanteModule, klartext.Breite, klartext.Hoehe);
+            }
+
+            ZeichneKlartext(g, klartext, nummer);
             ZeichneSchnittlinie(g, code.Schnittbox);
         }
 
-        /// <summary>Schreibt die Nummer zentriert in das Klartext-Feld.</summary>
+        /// <summary>
+        /// Schreibt die Nummer zentriert in das Klartext-Feld. Ist sie breiter als das Feld
+        /// (= Barcode-Breite bzw. QR-Kante), wird die Schrift automatisch verkleinert.
+        /// </summary>
         private static void ZeichneKlartext(Graphics g, Rechteck feld, string text)
         {
-            using (Font schrift = new Font("Consolas", KlartextSchriftMm, FontStyle.Regular, GraphicsUnit.Millimeter))
-            using (StringFormat format = new StringFormat())
+            double groesse = Schriftgroesse.Passend(text, feld.Breite, KlartextSchriftMm,
+                delegate(string t, double mm) { return TextBreiteMm(g, t, mm); });
+
+            using (Font schrift = new Font("Consolas", (float)groesse, FontStyle.Regular, GraphicsUnit.Millimeter))
+            // Gleiche Textmessung wie in TextBreiteMm (ohne Innenabstand) und kein Zeilenumbruch –
+            // sonst bricht ein knapp passender Text auf zwei Zeilen um.
+            using (StringFormat format = (StringFormat)StringFormat.GenericTypographic.Clone())
             {
+                format.FormatFlags |= StringFormatFlags.NoWrap;
                 format.Alignment = StringAlignment.Center;
                 format.LineAlignment = StringAlignment.Center;
                 RectangleF bereich = new RectangleF((float)feld.X, (float)feld.Y, (float)feld.Breite, (float)feld.Hoehe);
                 g.DrawString(text, schrift, Brushes.Black, bereich, format);
+            }
+        }
+
+        /// <summary>Misst die Breite eines Texts in mm (Graphics steht auf Millimeter).</summary>
+        private static double TextBreiteMm(Graphics g, string text, double groesseMm)
+        {
+            using (Font schrift = new Font("Consolas", (float)groesseMm, FontStyle.Regular, GraphicsUnit.Millimeter))
+            {
+                return g.MeasureString(text, schrift, PointF.Empty, StringFormat.GenericTypographic).Width;
             }
         }
 

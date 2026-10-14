@@ -15,20 +15,24 @@ namespace RfidLeser
         public const decimal MinMm = 1;
         public const decimal MaxMm = 210;
 
+        // Bis v1.1.1 hieß der Schlüssel "BarcodeHoehe" und meinte die Höhe OHNE Schrift.
+        // Seit v1.2.1 gilt die Höhe inklusive Schrift; alte Werte werden deshalb nicht übernommen.
+        private const string SchluesselBarcodeHoehe = "BarcodeHoeheMitSchrift";
+
         public Einstellungen()
         {
-            BarcodeBreite = 80;
-            BarcodeHoehe = 25;
-            QrKante = 40;
+            BarcodeBreite = 32;
+            BarcodeHoehe = 20;
+            QrKante = 30;
         }
 
-        /// <summary>Breite des Barcodes ohne Rand (Standard 80 mm).</summary>
+        /// <summary>Breite des Barcodes ohne Rand (Standard 32 mm).</summary>
         public decimal BarcodeBreite { get; set; }
 
-        /// <summary>Höhe der Barcode-Balken ohne Klartext (Standard 25 mm).</summary>
+        /// <summary>Höhe des Barcodes inklusive Schrift darunter (Standard 20 mm).</summary>
         public decimal BarcodeHoehe { get; set; }
 
-        /// <summary>Kantenlänge des QR-Codes (Standard 40 mm).</summary>
+        /// <summary>Kantenlänge des QR-Codes (Standard 30 mm).</summary>
         public decimal QrKante { get; set; }
 
         /// <summary>Vollständiger Pfad der Einstellungsdatei.</summary>
@@ -78,7 +82,7 @@ namespace RfidLeser
                     {
                         ergebnis.BarcodeBreite = zahl;
                     }
-                    else if (schluessel == "BarcodeHoehe")
+                    else if (schluessel == SchluesselBarcodeHoehe)
                     {
                         ergebnis.BarcodeHoehe = zahl;
                     }
@@ -103,7 +107,7 @@ namespace RfidLeser
 
             StringBuilder text = new StringBuilder();
             text.AppendLine("BarcodeBreite=" + BarcodeBreite.ToString(CultureInfo.InvariantCulture));
-            text.AppendLine("BarcodeHoehe=" + BarcodeHoehe.ToString(CultureInfo.InvariantCulture));
+            text.AppendLine(SchluesselBarcodeHoehe + "=" + BarcodeHoehe.ToString(CultureInfo.InvariantCulture));
             text.AppendLine("QrKante=" + QrKante.ToString(CultureInfo.InvariantCulture));
             File.WriteAllText(pfad, text.ToString(), Encoding.UTF8);
         }

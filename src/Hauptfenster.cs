@@ -84,13 +84,13 @@ namespace RfidLeser
 
             Label lblBreite = BaueBeschriftung("Barcode-Breite:", 15, 30);
             nudBarcodeBreite = BaueMassFeld(170, 27);
-            Label lblHoehe = BaueBeschriftung("Barcode-Höhe:", 15, 60);
+            Label lblHoehe = BaueBeschriftung("Barcode-Höhe mit Schrift:", 15, 60);
             nudBarcodeHoehe = BaueMassFeld(170, 57);
             Label lblQr = BaueBeschriftung("QR-Kantenlänge:", 15, 90);
             nudQrKante = BaueMassFeld(170, 87);
 
             Label hinweis = new Label();
-            hinweis.Text = "Diese Maße gelten für den Code selbst, ohne Rand. " +
+            hinweis.Text = "Diese Maße gelten für den Code selbst, ohne den 2-cm-Rand. Die Barcode-Höhe enthält die Schrift darunter. " +
                 "Vor dem Drucken wird geprüft, ob alles auf A4 passt.";
             hinweis.Location = new Point(300, 28);
             hinweis.Size = new Size(265, 90);
