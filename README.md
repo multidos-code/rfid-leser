@@ -35,7 +35,11 @@ aufgelegt, ändert sich die Anzeige nicht – dafür „Neu auslesen“ drücken
 
 Im Bereich „Größen in mm“ lassen sich Barcode-Breite, Barcode-Höhe und die
 Kantenlänge des QR-Codes einstellen. Die Werte gelten für den Code selbst,
-ohne den 2-cm-Rand. Standard: Barcode 80 × 25 mm, QR-Code 40 mm.
+ohne den 2-cm-Rand. Die Barcode-Höhe enthält die Schrift unter dem Barcode.
+Standard: Barcode 32 mm breit und 20 mm hoch, QR-Code 30 mm.
+
+Die Nummer steht unter beiden Codes. Wäre sie breiter als der Barcode bzw. der
+QR-Code, wird die Schrift automatisch kleiner.
 
 Die Werte werden gespeichert und beim nächsten Start wieder verwendet.
 Sind die Codes zu groß für ein A4-Blatt, ist der Knopf „Drucken“ gesperrt und

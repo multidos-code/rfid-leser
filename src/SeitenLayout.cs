@@ -68,11 +68,13 @@ namespace RfidLeser
         private const double Blattrand = 5;      // Mindestabstand Schnittbox zum Blattrand (Druckerrand)
         private const double Schnittrand = 20;   // Abstand Code zur Schnittlinie, auf allen Seiten
         private const double Klartexthoehe = 6;  // Höhe der Klartextzeile unter dem Code
+        private const double QrSchriftVersatz = 4; // Schrift unter dem QR-Code rückt so weit in dessen weißen Rand
         private const double Abstand = 10;       // Abstand zwischen Barcode-Box und QR-Box
         private const double Oben = 10;          // Abstand des Gesamtblocks zum oberen Blattrand
 
         /// <summary>
-        /// Berechnet die Positionen in mm. Maße sind die Code-Flächen ohne Klartext und Rand.
+        /// Berechnet die Positionen in mm. Barcode-Höhe = Striche UND Schrift zusammen;
+        /// Barcode-Breite und QR-Kante = Code-Fläche. Der 20-mm-Schnittrand kommt jeweils dazu.
         /// Ist etwas ungültig oder passt nicht, liefert Passt = false und eine Fehlermeldung.
         /// </summary>
         public static LayoutErgebnis Berechne(double barcodeBreiteMm, double barcodeHoeheMm, double qrKanteMm)
@@ -82,12 +84,21 @@ namespace RfidLeser
                 return new LayoutErgebnis(null, null, false,
                     "Alle Größen müssen mehr als 0 mm sein.");
             }
+            if (barcodeHoeheMm <= Klartexthoehe)
+            {
+                return new LayoutErgebnis(null, null, false,
+                    "Die Barcode-Höhe muss größer als " + Klartexthoehe + " mm sein, weil sie die Schrift unter dem Barcode mit enthält.");
+            }
+
+            // Barcode: Höhe enthält die Schrift, die Striche sind entsprechend niedriger
+            double strichHoehe = barcodeHoeheMm - Klartexthoehe;
 
             // Schnittboxen: Code plus Klartext plus 20 mm Rand auf allen Seiten
+            // (beim QR-Code sitzt die Schrift 4 mm höher, die Box ist entsprechend kürzer)
             double barcodeBoxBreite = barcodeBreiteMm + 2 * Schnittrand;
-            double barcodeBoxHoehe = barcodeHoeheMm + Klartexthoehe + 2 * Schnittrand;
+            double barcodeBoxHoehe = barcodeHoeheMm + 2 * Schnittrand;
             double qrBoxBreite = qrKanteMm + 2 * Schnittrand;
-            double qrBoxHoehe = qrKanteMm + Klartexthoehe + 2 * Schnittrand;
+            double qrBoxHoehe = qrKanteMm - QrSchriftVersatz + Klartexthoehe + 2 * Schnittrand;
 
             // Horizontal zentriert, vertikal untereinander mit 10 mm Abstand
             double barcodeBoxX = (BlattBreite - barcodeBoxBreite) / 2;
@@ -95,8 +106,8 @@ namespace RfidLeser
             double qrBoxX = (BlattBreite - qrBoxBreite) / 2;
             double qrBoxY = barcodeBoxY + barcodeBoxHoehe + Abstand;
 
-            CodeLayout barcode = BauePosition(barcodeBoxX, barcodeBoxY, barcodeBreiteMm, barcodeHoeheMm, barcodeBoxBreite, barcodeBoxHoehe);
-            CodeLayout qr = BauePosition(qrBoxX, qrBoxY, qrKanteMm, qrKanteMm, qrBoxBreite, qrBoxHoehe);
+            CodeLayout barcode = BauePosition(barcodeBoxX, barcodeBoxY, barcodeBreiteMm, strichHoehe, 0, barcodeBoxBreite, barcodeBoxHoehe);
+            CodeLayout qr = BauePosition(qrBoxX, qrBoxY, qrKanteMm, qrKanteMm, QrSchriftVersatz, qrBoxBreite, qrBoxHoehe);
 
             // Prüfen: Schnittboxen müssen innerhalb des Blatts mit 5 mm Rand liegen
             string fehler = PruefeInBlatt(barcode.Schnittbox, "Der Barcode");
@@ -116,12 +127,16 @@ namespace RfidLeser
             return new LayoutErgebnis(barcode, qr, true, string.Empty);
         }
 
-        /// <summary>Erzeugt Code-, Klartext- und Schnittbox-Rechteck für eine Position.</summary>
+        /// <summary>
+        /// Erzeugt Code-, Klartext- und Schnittbox-Rechteck für eine Position.
+        /// klartextVersatz: so viele mm rückt die Klartextzeile nach oben in den Code-Bereich.
+        /// </summary>
         private static CodeLayout BauePosition(double boxX, double boxY, double codeBreite, double codeHoehe,
-            double boxBreite, double boxHoehe)
+            double klartextVersatz, double boxBreite, double boxHoehe)
         {
             Rechteck code = new Rechteck(boxX + Schnittrand, boxY + Schnittrand, codeBreite, codeHoehe);
-            Rechteck klartext = new Rechteck(boxX + Schnittrand, boxY + Schnittrand + codeHoehe, codeBreite, Klartexthoehe);
+            Rechteck klartext = new Rechteck(boxX + Schnittrand, boxY + Schnittrand + codeHoehe - klartextVersatz,
+                codeBreite, Klartexthoehe);
             Rechteck schnittbox = new Rechteck(boxX, boxY, boxBreite, boxHoehe);
             return new CodeLayout(code, klartext, schnittbox);
         }

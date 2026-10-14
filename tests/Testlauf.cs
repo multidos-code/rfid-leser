@@ -29,6 +29,8 @@ namespace RfidLeser.Tests
             QrErzeugerTests.Alle();
             SeitenLayoutTests.Alle();
             VersionsnummerTests.Alle();
+            SchriftgroesseTests.Alle();
+            EinstellungenTests.Alle();
 
             // Weitere Testgruppen hier eintragen (Bausteine werden nacheinander ergänzt).
 
