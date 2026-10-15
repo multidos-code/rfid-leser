@@ -28,6 +28,15 @@ namespace RfidLeser
         public Hauptfenster()
         {
             Text = Versionsnummer.Fenstertitel(Versionsnummer.AusProgramm());
+            // Programmsymbol der exe auch in Titelleiste und Taskleiste zeigen
+            try
+            {
+                Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            }
+            catch (Exception)
+            {
+                // Symbol nicht lesbar: Windows-Standardsymbol bleibt
+            }
             ClientSize = new Size(620, 450);
             KeyPreview = true;
             FormBorderStyle = FormBorderStyle.FixedSingle;

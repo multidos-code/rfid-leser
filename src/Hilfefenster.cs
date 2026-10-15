@@ -16,6 +16,15 @@ namespace RfidLeser
         public Hilfefenster()
         {
             Text = "RFID-Leser – Hilfe";
+            // Programmsymbol der exe auch in Titelleiste und Taskleiste zeigen
+            try
+            {
+                Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+            }
+            catch (Exception)
+            {
+                // Symbol nicht lesbar: Windows-Standardsymbol bleibt
+            }
             ClientSize = new Size(700, 600);
             StartPosition = FormStartPosition.CenterParent;
             ShowInTaskbar = false;

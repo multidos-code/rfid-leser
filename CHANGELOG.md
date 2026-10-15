@@ -4,6 +4,11 @@ Jede freigegebene Version braucht hier einen Abschnitt `## x.y.z`. Sein Text ers
 auf der GitHub-Release-Seite. Bitte in einfacher Sprache beschreiben, was sich für die
 Anwender ändert.
 
+## 1.3.0
+
+- Eigenes Programmsymbol: RFID-Leser ist auf dem Desktop, im Explorer und in der
+  Taskleiste an einer blauen Chipkarte mit Funkwellen zu erkennen.
+
 ## 1.2.1
 
 - Neue Standardgrößen: Barcode 32 mm breit und 20 mm hoch, QR-Code 30 mm.

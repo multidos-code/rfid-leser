@@ -130,6 +130,7 @@ Schlägt ein Test fehl, wird nichts veröffentlicht.
 - `src\` Programmcode (Logik getrennt von Oberfläche)
 - `tests\` eigenes kleines Testprogramm
 - `lib\QRCoder.dll` QR-Bibliothek, wird in die exe eingebettet
+- `assets\RFID-Leser.ico` Programmsymbol; neu erzeugen mit `pwsh -File .\tools\erzeuge-symbol.ps1`
 
 ### Lizenzhinweis
 
